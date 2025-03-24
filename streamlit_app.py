@@ -2,11 +2,15 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
+
 # Load the pre-trained model
 @st.cache_resource
 def load_model():
     try:
         model = joblib.load("heart_disease_model.pkl")
+        # Verify it's a fitted model
+        if not hasattr(model, 'predict') or not callable(model.predict):
+            raise ValueError("Loaded object is not a valid scikit-learn model")
         return model
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
