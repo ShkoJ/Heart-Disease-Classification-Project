@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import joblib
-
 # Load the pre-trained model
 @st.cache_resource
 def load_model():
