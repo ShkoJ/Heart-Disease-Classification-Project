@@ -1,15 +1,22 @@
 import streamlit as st
 import pandas as pd
-import joblib
 import numpy as np
+import joblib
 
 # Load the pre-trained model
 @st.cache_resource
 def load_model():
-    model = joblib.load("heart_disease_model.pkl")
-    return model
+    try:
+        model = joblib.load("heart_disease_model.pkl")
+        return model
+    except Exception as e:
+        st.error(f"Error loading model: {str(e)}")
+        return None
 
 model = load_model()
+
+if model is None:
+    st.stop()
 
 # Title and description
 st.title("Heart Disease Prediction App")
@@ -50,10 +57,21 @@ with col5:
 
 # Prediction function
 def predict_heart_disease(features):
-    feature_array = np.array(features).reshape(1, -1)
-    prediction = model.predict(feature_array)
-    probability = model.predict_proba(feature_array)[0]
-    return prediction[0], probability
+    try:
+        # Convert to numpy array and ensure correct shape
+        feature_array = np.array(features, dtype=float).reshape(1, -1)
+        
+        # Debug: Show input shape
+        st.write(f"Input shape: {feature_array.shape}")
+        st.write(f"Input features: {feature_array}")
+        
+        # Make prediction
+        prediction = model.predict(feature_array)
+        probability = model.predict_proba(feature_array)[0]
+        return prediction[0], probability
+    except Exception as e:
+        st.error(f"Prediction error: {str(e)}")
+        return None, None
 
 # Predict button
 if st.button("Predict"):
@@ -63,22 +81,23 @@ if st.button("Predict"):
     # Make prediction
     prediction, probability = predict_heart_disease(features)
     
-    # Display results
-    st.subheader("Prediction Results")
-    if prediction == 1:
-        st.error(f"High Risk of Heart Disease (Probability: {probability[1]:.2%})")
-    else:
-        st.success(f"Low Risk of Heart Disease (Probability of no disease: {probability[0]:.2%})")
-    
-    # Display probability bars
-    st.write("Prediction Confidence:")
-    col_prob1, col_prob2 = st.columns(2)
-    with col_prob1:
-        st.write("No Heart Disease")
-        st.progress(probability[0])
-    with col_prob2:
-        st.write("Heart Disease")
-        st.progress(probability[1])
+    # Display results if prediction successful
+    if prediction is not None and probability is not None:
+        st.subheader("Prediction Results")
+        if prediction == 1:
+            st.error(f"High Risk of Heart Disease (Probability: {probability[1]:.2%})")
+        else:
+            st.success(f"Low Risk of Heart Disease (Probability of no disease: {probability[0]:.2%})")
+        
+        # Display probability bars
+        st.write("Prediction Confidence:")
+        col_prob1, col_prob2 = st.columns(2)
+        with col_prob1:
+            st.write("No Heart Disease")
+            st.progress(float(probability[0]))
+        with col_prob2:
+            st.write("Heart Disease")
+            st.progress(float(probability[1]))
 
 # Add some footer information
 st.write("---")
